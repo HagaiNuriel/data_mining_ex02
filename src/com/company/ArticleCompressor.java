@@ -15,20 +15,21 @@ public class ArticleCompressor {
 
     private static final String whitespaceDelimeter = "\\s+";
     private static final String stopWordsFileName = "stopwords.txt";
+    private static final String labeledFileName = "labeled_dataset.txt";
+    private static final String unlabeledFileName = "unlabled_dataset.txt";
     private static String path = "Resources/";
     private static Long lineCount = 0l;
 
     public static void compressArticles(String path) throws IOException {
-        String fileName = "newFile.txt";
-        BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true));
+        BufferedWriter labeledWriter = new BufferedWriter(new FileWriter(labeledFileName, false));
+        BufferedWriter unlabeledWriter = new BufferedWriter(new FileWriter(unlabeledFileName, false));
         int currIndex = 0;
-        Integer lineCount = 0;
         List<ArticleLine> articleLines = new ArrayList<>();
         try (Stream<Path> files = list(Paths.get(path))) {
             long uniqueFileCount = (files.count() - 1)/3;
             List<Path> allFiles = list(Paths.get(path)).collect(Collectors.toList());
-            Collections.sort(allFiles, (a,b) -> a.getFileName().toString().compareToIgnoreCase(b.getFileName().toString()));
-             //List<Path> allFiles = files.collect(Collectors.toList());
+            Collections.sort(allFiles, (a,b) -> a.getFileName()
+                    .toString().compareToIgnoreCase(b.getFileName().toString()));
 
             for (long i=0; i<uniqueFileCount;i++)
             {
@@ -38,11 +39,14 @@ public class ArticleCompressor {
             }
 
             for(ArticleLine line : articleLines){
-                writer.append(line.getProminentTag() + line.getText());
-                writer.newLine();
+                labeledWriter.append(line.getProminentTag() + "\t" + line.getText().trim());
+                labeledWriter.newLine();
+                unlabeledWriter.append(line.getText());
+                unlabeledWriter.newLine();
             }
 
-            writer.close();
+            labeledWriter.close();
+            unlabeledWriter.close();
 
         } catch (IOException e) {
             e.printStackTrace();
