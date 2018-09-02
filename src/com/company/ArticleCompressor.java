@@ -18,12 +18,12 @@ public class ArticleCompressor {
     private static final String labeledFileName = "labeled_dataset.txt";
     private static final String unlabeledFileName = "unlabled_dataset.txt";
     private static String path = "Resources/";
-    private static Long lineCount = 0l;
 
     public static void compressArticles(String path) throws IOException {
         BufferedWriter labeledWriter = new BufferedWriter(new FileWriter(labeledFileName, false));
         BufferedWriter unlabeledWriter = new BufferedWriter(new FileWriter(unlabeledFileName, false));
         int currIndex = 0;
+        int newLineFlag = -1;
         List<ArticleLine> articleLines = new ArrayList<>();
         try (Stream<Path> files = list(Paths.get(path))) {
             long uniqueFileCount = (files.count() - 1)/3;
@@ -31,18 +31,22 @@ public class ArticleCompressor {
             Collections.sort(allFiles, (a,b) -> a.getFileName()
                     .toString().compareToIgnoreCase(b.getFileName().toString()));
 
-            for (long i=0; i<uniqueFileCount;i++)
+            for (long i=0; i < uniqueFileCount; i++)
             {
                 articleLines.addAll(compressFileTrio(allFiles, currIndex));
                 currIndex += 3;
-
             }
 
             for(ArticleLine line : articleLines){
+                if(newLineFlag > -1){
+                    labeledWriter.newLine();
+                    unlabeledWriter.newLine();
+                }else{
+                    newLineFlag++;
+                }
+
                 labeledWriter.append(line.getProminentTag() + "\t" + line.getText().trim());
-                labeledWriter.newLine();
-                unlabeledWriter.append(line.getText());
-                unlabeledWriter.newLine();
+                unlabeledWriter.append(line.getText().trim());
             }
 
             labeledWriter.close();
@@ -67,9 +71,13 @@ public class ArticleCompressor {
     private static Collection<? extends ArticleLine> compressFileTrio(List<Path> paths, Integer index) throws IOException {
         List<ArticleLine> articleLines = new ArrayList<>();
         ArticleLine articleLine;
-        FileInputStream firstFileStream = new FileInputStream("Resources/" + paths.get(index).getFileName().toString());
-        FileInputStream secondFileStream = new FileInputStream("Resources/" + paths.get(index + 1).getFileName().toString());
-        FileInputStream thirdFileStream = new FileInputStream("Resources/" + paths.get(index + 2).getFileName().toString());
+
+        FileInputStream firstFileStream = new FileInputStream
+                ( path + paths.get(index).getFileName().toString());
+        FileInputStream secondFileStream = new FileInputStream
+                (path + paths.get(index + 1).getFileName().toString());
+        FileInputStream thirdFileStream = new FileInputStream
+                (path + paths.get(index + 2).getFileName().toString());
 
         DataInputStream in1 = new DataInputStream(firstFileStream);
         BufferedReader br1 = new BufferedReader(new InputStreamReader(in1));
@@ -98,7 +106,6 @@ public class ArticleCompressor {
                 articleLines.add(articleLine);
             }
         }
-
 
         br1.close();
         br2.close();
