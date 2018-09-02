@@ -15,6 +15,10 @@ public class ArticleLine {
         this.maxTagFrequency = maxTagFrequency;
     }
 
+    public void setLastTag(e_tagType lastTag) {
+        this.lastTag = lastTag;
+    }
+
     public enum e_tagType{
         MISC,
         AIMX,
@@ -35,7 +39,7 @@ public class ArticleLine {
     private String text;
     //private HashMap<e_tagger,e_tagType> tags;
 
-    private HashMap<e_tagType, Integer> tags;
+    private HashMap<e_tagType, Integer> tags = new HashMap<>();
     private e_tagType lastTag;
     private e_tagType maxTag;
     private Integer maxTagFrequency;
