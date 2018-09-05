@@ -49,21 +49,21 @@ public class ArticleCompressor {
         HashMap<String,Integer> uniqueWordLinesCount = countLinesForUniqueWords(uniqueWords, originalFileName);
         BufferedWriter writer = new BufferedWriter(new FileWriter(newFileName));
 
-        FileInputStream firstFileStream = new FileInputStream(originalFileName);
-        DataInputStream in = new DataInputStream(firstFileStream);
-        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        BufferedReader br = new BufferedReader(new FileReader(originalFileName));
         ArticleLineVector currArticleLineVector;
         String currLine;
         Long linesCount = br.lines().count();
+        br.close();
+        BufferedReader br2 = new BufferedReader(new FileReader(originalFileName));
 
-        while((currLine = br.readLine()) != null){
+        while((currLine = br2.readLine()) != null){
             currArticleLineVector = createArticleLineVector(currLine);
             writeVectorLine(writer, uniqueWords, currArticleLineVector,
                     uniqueWordLinesCount, linesCount);
         }
 
         writer.close();
-        br.close();
+        br2.close();
     }
 
     private static void writeVectorLine(BufferedWriter writer, List<String> uniqueWords,
