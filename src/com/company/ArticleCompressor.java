@@ -17,7 +17,108 @@ public class ArticleCompressor {
     private static final String stopWordsFileName = "stopwords.txt";
     private static final String labeledFileName = "labeled_dataset.txt";
     private static final String unlabeledFileName = "unlabled_dataset.txt";
+    private static final String labeledVectorsFileName = "labeled_dataset_vectors.txt";
+    private static final String unlabeledVectorsFileName = "unlabeled_dataset_vectors.txt";
     private static String path = "Resources/";
+    private static List<String> uniqueWords = new ArrayList<>();
+
+
+    private static List<String> countUniqueWords(String fileName) throws Exception {
+        HashMap<String, Boolean> words = new HashMap<>();
+        FileInputStream firstFileStream = new FileInputStream(fileName);
+        DataInputStream in = new DataInputStream(firstFileStream);
+        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        String currLine;
+
+        while((currLine = br.readLine()) != null){
+            for(String word : currLine.split("[-!,~\\s]+")){
+                if(!words.containsKey(word)){
+                    words.put(word, true);
+                }
+            }
+        }
+
+        br.close();
+
+        return  new ArrayList<>(words.keySet());
+
+    }
+
+    public static void createVectorFile(String originalFileName, String newFileName) throws Exception {
+        List<String> uniqueWords = countUniqueWords(originalFileName);
+        HashMap<String,Integer> uniqueWordLinesCount = countLinesForUniqueWords(uniqueWords, originalFileName);
+        BufferedWriter writer = new BufferedWriter(new FileWriter(newFileName));
+
+        FileInputStream firstFileStream = new FileInputStream(originalFileName);
+        DataInputStream in = new DataInputStream(firstFileStream);
+        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        ArticleLineVector currArticleLineVector;
+        String currLine;
+        Long linesCount = br.lines().count();
+
+        while((currLine = br.readLine()) != null){
+            currArticleLineVector = createArticleLineVector(currLine);
+            writeVectorLine(writer, uniqueWords, currArticleLineVector,
+                    uniqueWordLinesCount, linesCount);
+        }
+
+        writer.close();
+        br.close();
+    }
+
+    private static void writeVectorLine(BufferedWriter writer, List<String> uniqueWords,
+                                        ArticleLineVector articleLineVector, HashMap<String, Integer> uniquWordLinesCount, Long linesCount) throws IOException {
+        Double tfResult, idfResult, finalResult;
+        Boolean putComa = false;
+        for (String word : uniqueWords) {
+            tfResult = 0.5 + (0.5 * (articleLineVector.getWordCount(word) /
+                    articleLineVector.getWordCount(articleLineVector.getProminentWord())));
+            idfResult = Math.log((double)linesCount / (double)(1 + uniquWordLinesCount.get(word)));
+
+            finalResult = tfResult * idfResult;
+
+            if(putComa){
+                writer.append(",");
+            }else
+                putComa = true;
+
+            writer.append(finalResult.toString());
+        }
+
+        writer.newLine();
+    }
+
+    private static HashMap<String,Integer> countLinesForUniqueWords(List<String> uniqueWords, String originalFileName) throws IOException {
+        HashMap<String, Integer> wordsLinesCount = new HashMap<>();
+        FileInputStream firstFileStream = new FileInputStream(originalFileName);
+        DataInputStream in = new DataInputStream(firstFileStream);
+        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        ArrayList<String> lines = br.lines().collect(Collectors.toCollection(ArrayList::new));
+        String currLine;
+        Integer count;
+
+        for (String word : uniqueWords) {
+            for (String line : lines) {
+                if(line.contains(word)){
+                    count = wordsLinesCount.containsKey(word) ? wordsLinesCount.get(word) + 1 : 1;
+                    wordsLinesCount.put(word, count);
+                }
+            }
+        }
+
+        br.close();
+        return wordsLinesCount;
+    }
+
+    private static ArticleLineVector createArticleLineVector(String currLine) {
+        ArticleLineVector vector = new ArticleLineVector();
+
+        for(String word : currLine.split("[-!,~\\s]+")){
+           vector.countWord(word);
+        }
+
+        return vector;
+    }
 
     public static void compressArticles(String path) throws IOException {
         BufferedWriter labeledWriter = new BufferedWriter(new FileWriter(labeledFileName, false));
@@ -126,12 +227,6 @@ public class ArticleCompressor {
             stopWordsList.add(word.substring(0, 1).toUpperCase() + word.substring(1));
         }
 
-//        for(e_tagType tagType : e_tagType.values()){
-//            stopWordsList.add(tagType.name());
-//        }
-
-        //stopWordsList.add("###");
-
         return stopWordsList;
     }
 
@@ -160,4 +255,6 @@ public class ArticleCompressor {
 
         return strLine;
     }
+
+
 }
